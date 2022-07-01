@@ -5,7 +5,6 @@ import matplotlib as mpl
 import seaborn as sns
 import copy
 import os
-import time
 import datetime
 import itertools
 from warnings import simplefilter
@@ -17,7 +16,6 @@ df = pd.read_csv('.\datasets\current_data_without_preproc.csv')
 df  = df.drop(columns=["Unnamed: 0.1","Unnamed: 0"])
 
 ## Fully automated function (WIP)
-start = time.time()
 combined_col = []
 pri_cols = ["Division", "Location", "ResourceLevel"]
 sec_col = ["Division", "Location", "Support from Company"]
@@ -44,7 +42,6 @@ mapping = {
     "Gender": "categorical",
     "Birthday": "datetime",
     "Grade": "categorical",
-    "LineManager": "categorical",
     "Nationality": "categorical",
     "EmployeeType": "categorical",
     "MgrResourceLevel": "categorical",
@@ -57,15 +54,12 @@ mapping = {
     "Avg Annual leave days taken/month (6 mths)": "numerical",
     "Personal Development (satisfaction)": "numerical",
     "Promotion frequency/last 2 yrs.": "numerical",
-    #"Support from Company": "numerical",
+    "Support from Company": "numerical",
     # "Job Satisfaction": "categorical",
     "Month in current level": "numerical",
     "Avg Extra time hours/week(6 mths)": "numerical",
     "Last annual performance rating": "numerical" 
 }#    "ResignationReason": "categorical",
-    # "Personal Development (satisfaction)": "categorical",
-    # "Support from Company": "categorical",
-    #     "Job Satisfaction": "categorical", => removed bc too many missing values
 ### START OF SAVING VISUALS FUNCTION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def save_viz(file_name):
@@ -103,7 +97,6 @@ def kde_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
 
 def bar_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):  
     bar_fig = sns.catplot(data=viz_df, x=x_label, y=y_label, kind="bar", hue=hue_label, palette="bright")
-    #print("x label is: " + str(x_label) + "---- y label is: " + str(y_label) + "\n")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
     file_name = f"BarPlot_of_{x_label}_and_{y_label}.png"
@@ -120,6 +113,8 @@ def box_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
 
 def swarm_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     swarm_fig = sns.catplot(data=viz_df, x=x_label, y=y_label, kind="swarm", hue=hue_label, palette="bright")
+    x_label = str_replacing(x_label)
+    y_label = str_replacing(y_label)
     file_name = f"SwarmPlot_of_{x_label}_and_{y_label}.png"
     save_viz(file_name)
     plt.close()
@@ -157,30 +152,25 @@ def ecdf_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str):
 
 def viz(viz_df: pd.DataFrame, x_label_list: list, hue_label: list, y_label_list: list):
     hue_label = ''.join(hue_label)
-    start = time.time()
     for (x_label, y_label) in itertools.product(x_label_list, y_label_list):
 
         if (mapping[x_label] == "categorical" or mapping[x_label] == "datetime") and (mapping[y_label] == "numerical") and (label_checker(x_label, hue_label)):
             bar_plot(viz_df, x_label, hue_label, y_label)
             box_plot(viz_df, x_label, hue_label, y_label)
-
-        elif (mapping[x_label] == "numerical" or mapping[x_label] == "datetime") and (mapping[y_label] == "numerical") and (label_checker(x_label, hue_label)):
-            kde_plot(viz_df, x_label, hue_label, y_label)
-            line_plot(viz_df, x_label, hue_label, y_label)
-        
-        elif (mapping[x_label] == "numerical" or mapping[x_label] == "datetime") and (mapping[y_label] == "numerical" or mapping[y_label] == "datetime") and (label_checker(x_label, hue_label)):
-            lm_plot(viz_df, x_label, hue_label, y_label)
-
-        elif (mapping[x_label] == "categorical" or mapping[x_label] == "datetime") and (mapping[x_label] == "numerical") and (label_checker(x_label, hue_label)):
             hist_plot(viz_df, x_label, hue_label, y_label)
             scatter_plot(viz_df, x_label, hue_label, y_label)
             swarm_plot(viz_df, x_label, hue_label, y_label)
-            
-        elif (mapping[x_label] == "categorical" or mapping[x_label] == "numerical" or mapping[x_label] == "datetime") and (label_checker(x_label, hue_label)):
+
+        if (mapping[x_label] == "numerical" or mapping[x_label] == "datetime") and (mapping[y_label] == "numerical") and (label_checker(x_label, hue_label)):
+            kde_plot(viz_df, x_label, hue_label, y_label)
+            line_plot(viz_df, x_label, hue_label, y_label)
+        
+        if (mapping[x_label] == "numerical" or mapping[x_label] == "datetime") and (mapping[y_label] == "numerical" or mapping[y_label] == "datetime") and (label_checker(x_label, hue_label)):
+            lm_plot(viz_df, x_label, hue_label, y_label)
+
+        if (mapping[x_label] == "categorical" or mapping[x_label] == "numerical" or mapping[x_label] == "datetime") and (label_checker(x_label, hue_label)):
             ecdf_plot(viz_df, x_label, hue_label)
             
-    end = time.time()
-    #print(end-start)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### END OF PLOTTING FUNCTION
 
@@ -189,7 +179,6 @@ def viz(viz_df: pd.DataFrame, x_label_list: list, hue_label: list, y_label_list:
 def table_calc(input_df_calc: pd.DataFrame, pri_cols_calc: list,sec_col_calc: list, val_col_calc: list, val_col_nocalc: list = []):
     
     original_val_col_calc = copy.deepcopy(val_col_calc)
-
     
     try:
         group_by_col = pri_cols_calc + sec_col_calc
@@ -217,15 +206,13 @@ def table_calc(input_df_calc: pd.DataFrame, pri_cols_calc: list,sec_col_calc: li
             new_col_name_list.append(new_col_name)
     
     test_df = pd.concat([test_df, new_df], axis=1, join="inner")
-    #test_df = test_df.groupby(group_by_col, as_index=True).transform("sum")
     for i in new_col_name_list:
         val_col_calc.append(i)
         mapping[i] = "numerical"
             
     test_df = test_df.drop_duplicates(group_by_col)
     val_col_calc += val_col_nocalc
-    print(test_df)
-    #viz(test_df, pri_cols_calc, sec_col_calc, val_col_calc)
+    viz(test_df, pri_cols_calc, sec_col_calc, val_col_calc)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### END OF CALCULATED TABLE FUNCTION
 
@@ -249,21 +236,7 @@ def initialisation(calc_needed: bool, input_df_initialisation: pd.DataFrame, df_
             except Exception as e:
                 print(e)
                 
-        #sec_col_initialisation = pri_cols_initialisation[0]
     initial_val_cols = copy.deepcopy(val_col_initialisation)
-
-    # if counter != 0:
-    #     val_col_initialisation = copy.deepcopy(initial_val_cols)
-
-        ## ITERTOOLS WIP
-    # for a, b in itertools.product(pri_cols_initialisation, sec_col_initialisation):
-    #     if counter != 0:
-    #         val_col_initialisation = copy.deepcopy(initial_val_cols)
-    #     # if calc_needed == True:
-    #     #     table_calc(input_df_initialisation, )
-    #     print("a is:" + str(a) + "---------- b is:" + str(b) + "\n")
-
-
 
     if len(sec_col_initialisation) != 1:
         lists_of_sec_cols = [sec_col_initialisation[x: x+1] for x in range(0, len(sec_col_initialisation), 1)]
@@ -285,6 +258,4 @@ def initialisation(calc_needed: bool, input_df_initialisation: pd.DataFrame, df_
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### END OF INITIALISATION FUNCTION
 initialisation(1, df, mapping)
-#nitialisation(1, df, mapping, pri_cols, sec_col, list_of_val_cols_calc, list_of_val_cols_nocalc) # only this will not have an int
-end = time.time()
-print(end-start)
+#initialisation(1, df, mapping, pri_cols, sec_col, list_of_val_cols_calc, list_of_val_cols_nocalc) # only this will not have an int
