@@ -8,26 +8,30 @@ import os
 import datetime
 import itertools
 from warnings import simplefilter
+import time
 mpl.rcdefaults()
 mpl.rcParams["lines.markersize"] = 2
 mpl.rcParams["lines.linewidth"] = 0.5
 simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
-
+start = time.time()
 df = pd.read_csv('.\datasets\current_data_without_preproc.csv')
 df  = df.drop(columns=["Unnamed: 0.1","Unnamed: 0"])
 
 combined_col = []
-pri_cols = ["Division", "Location", "ResourceLevel"]
-sec_col = ["Division", "Location", "Support from Company"]
+pri_cols = ["Division", "Location"]
+sec_col = ["Division"]
 list_of_val_cols_calc = ["Department", "Status"]
-list_of_val_cols_nocalc = ["Service Years", "Age"]
+#list_of_val_cols_nocalc = ["Service Years", "Personal Development (satisfaction)"]
+list_of_val_cols_nocalc = ["Service Years", "Support from Company", "Personal Development (satisfaction)", "Support from Company", "Job Satisfaction", "Avg Extra time hours/week(6 mths)", "Avg Annual leave days taken/month (6 mths)"]
+
+# 
 
 current_dir = os.getcwd()
 current_datetime = datetime.datetime.now().strftime("%d.%m.%Y_%H%M")
 dest_path = current_dir+'\\'+current_datetime + "_Visualisation"
 if not os.path.exists(dest_path):
     os.makedirs(dest_path)
-readme_l = ["File Naming Conventions", "\n\n" ,"[Visual]_of_[x axis]_&_[y axis]_&_[legend]"]
+readme_l = ["File Naming Conventions", "\n\n" ,"[Name of Visual] of [x axis] & [y axis] & [legend]"]
 with open(dest_path + "/(1)README.txt", "w") as f:
     f.writelines(readme_l)
 
@@ -58,7 +62,7 @@ mapping = {
     "Personal Development (satisfaction)": "numerical",
     "Promotion frequency/last 2 yrs.": "numerical",
     "Support from Company": "numerical",
-    # "Job Satisfaction": "categorical",
+    "Job Satisfaction": "numerical",
     "Month in current level": "numerical",
     "Avg Extra time hours/week(6 mths)": "numerical",
     "Last annual performance rating": "numerical" 
@@ -86,72 +90,72 @@ def hist_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     hist_fig = sns.displot(data=viz_df, x=x_label, y=y_label, kind="hist", hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"HistPlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("histplot")
     plt.close()
 
 def kde_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     kde_fig = sns.displot(data=viz_df, x=x_label, y=y_label, kind="kde", hue=hue_label, palette="bright") 
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"KDEPlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("kdeplot")
     plt.close()
 
-def bar_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):  
+def bar_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str): 
     bar_fig = sns.catplot(data=viz_df, x=x_label, y=y_label, kind="bar", hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"BarPlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("barplot")
     plt.close()
 
 def box_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     box_fig = sns.boxplot(data=viz_df, x=x_label, y=y_label, hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"BoxPlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("boxplot")
     plt.close()
 
 def swarm_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     swarm_fig = sns.catplot(data=viz_df, x=x_label, y=y_label, kind="swarm", hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"SwarmPlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("swarmplot")
     plt.close()
 
 def scatter_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     scatter_fig = sns.relplot(data=viz_df, x=x_label, y=y_label, kind="scatter", hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"ScatterPlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("scatterplot")
     plt.close()
 
 def line_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     line_fig = sns.relplot(data=viz_df, x=x_label, y=y_label, kind="line", hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"LinePlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("lineplot")
     plt.close()
 
 def lm_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
     lm_fig = sns.lmplot(data=viz_df, x=x_label, y=y_label, hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
+    hue_label = str_replacing(hue_label)
     file_name = f"LMPlot_of_{x_label}_&_{y_label}_&_{hue_label}.png"
     save_viz(file_name)
-    print("lmplot")
     plt.close()
 
 def ecdf_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str):
@@ -159,7 +163,6 @@ def ecdf_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str):
     x_label = str_replacing(x_label)
     file_name = f"ECDFPlot_of_{x_label}.png"
     save_viz(file_name)
-    print("ecdfplot")
     plt.close()
 
 def viz(viz_df: pd.DataFrame, x_label_list: list, hue_label: list, y_label_list: list):
@@ -200,7 +203,7 @@ def table_calc(input_df_calc: pd.DataFrame, pri_cols_calc: list,sec_col_calc: li
         print(e)
     new_df = pd.DataFrame()
     temp_df = input_df_calc.loc[:, combined_col]
-    temp_df = temp_df.T.drop_duplicates().T
+    temp_df = temp_df.loc[:,~temp_df.columns.duplicated()]
 
     val_col_calc = copy.deepcopy(original_val_col_calc)
     for val in val_col_calc: 
@@ -220,7 +223,7 @@ def table_calc(input_df_calc: pd.DataFrame, pri_cols_calc: list,sec_col_calc: li
     for i in new_col_name_list:
         val_col_calc.append(i)
         mapping[i] = "numerical"
-            
+
     temp_df = temp_df.drop_duplicates(group_by_col)
     val_col_calc += val_col_nocalc
     viz(temp_df, pri_cols_calc, sec_col_calc, val_col_calc)
@@ -269,4 +272,6 @@ def initialisation(calc_needed: bool, input_df: pd.DataFrame, df_mapping: dict, 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### END OF INITIALISATION FUNCTION
 initialisation(1, df, mapping)
+end = time.time()
+print("Time taken to run: " + str(end-start))
 #initialisation(1, df, mapping, pri_cols, sec_col, list_of_val_cols_calc, list_of_val_cols_nocalc) # only this will not have an int
