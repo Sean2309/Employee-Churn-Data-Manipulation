@@ -12,37 +12,17 @@ import time
 
 ## User Input
 combined_col = []
-pri_cols = ["Division", "Location", "Gender"]
+pri_cols = ["Division", "Location"]
 sec_col = ["Division"]
-list_of_val_cols_calc = ["Status"]
-list_of_val_cols_nocalc = ["Service Years", "Support from Company", "Personal Development (satisfaction)", "Avg Annual leave days taken/month (6 mths)", "Age"]
+list_of_val_cols_calc = ["Department", "Status"]
+list_of_val_cols_nocalc = ["Service Years", "Support from Company", "Personal Development (satisfaction)", "Support from Company", "Job Satisfaction", "Avg Extra time hours/week(6 mths)", "Avg Annual leave days taken/month (6 mths)"]
 mapping = {
-    "Division": "categorical",
-    "Department": "categorical",
-    "Location": "categorical",
-    "ResourceLevel": "categorical",
-    "Style": "categorical",
-    "Status": "categorical",
-    "Gender": "categorical",
-    "Birthday": "datetime",
-    "Grade": "categorical",
-    "Nationality": "categorical",
-    "EmployeeType": "categorical",
-    "MgrResourceLevel": "categorical",
-    "K/H": "categorical",
-    "Voluntary": "categorical",
-    "ResignationType": "categorical",
-    "Medical leave day (6 mths)": "numerical",
-    "Service Years": "numerical",
-    "Age": "numerical",
-    "Avg Annual leave days taken/month (6 mths)": "numerical",
-    "Personal Development (satisfaction)": "numerical",
-    "Promotion frequency/last 2 yrs.": "numerical",
-    "Support from Company": "numerical",
-    "Job Satisfaction": "numerical",
-    "Month in current level": "numerical",
-    "Avg Extra time hours/week(6 mths)": "numerical",
-    "Last annual performance rating": "numerical" 
+    "MSSubClass": "categorical",
+    "MSZoning": "categorical",
+    "OverallQual": "numerical",
+    "OverallCond": "numerical",
+    "YearBuilt": "datetime",
+    "MiscVal": "numerical"
 }
 
 ## Customised Settings
@@ -53,8 +33,7 @@ simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 ## Importing DF
 start = time.time()
-df = pd.read_csv('.\datasets\current_data_without_preproc.csv')
-df  = df.drop(columns=["Unnamed: 0.1","Unnamed: 0"])
+df = pd.read_csv('.\datasets\house prices/test.csv')
 
 ## Creating Dest Folder
 current_dir = os.getcwd()
@@ -87,7 +66,6 @@ def str_replacing(input_str: str):
     return str1
 
 def hist_plot(viz_df: pd.DataFrame, x_label: str, hue_label: str, y_label: str):
-
     hist_fig = sns.displot(data=viz_df, x=x_label, y=y_label, kind="hist", hue=hue_label, palette="bright")
     x_label = str_replacing(x_label)
     y_label = str_replacing(y_label)
@@ -274,6 +252,6 @@ def initialisation(calc_needed: bool, input_df: pd.DataFrame, df_mapping: dict, 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ### END OF INITIALISATION FUNCTION
 initialisation(1, df, mapping)
-#initialisation(1, df, mapping, pri_cols, sec_col, list_of_val_cols_calc, list_of_val_cols_nocalc) # only this will not have an int
 end = time.time()
 print("Time taken to run: " + str(end-start))
+#initialisation(1, df, mapping, pri_cols, sec_col, list_of_val_cols_calc, list_of_val_cols_nocalc) # only this will not have an int
