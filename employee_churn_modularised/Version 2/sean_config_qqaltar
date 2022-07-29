@@ -1,0 +1,32 @@
+compute_table
+    1
+
+pri_cols
+
+sec_cols
+
+cat_cols_to_expand
+
+num_cols
+
+
+datetime_cols
+
+
+df_file_path
+    C:\\Users\\sphay\\Downloads\qq_altar_cergy.csv
+    
+mapping
+    categorical
+        Status
+        Priority
+        Custom field (Bug Severity)
+        Custom field (Frequency)
+
+    numerical
+
+
+    datetime
+        Created
+        Updated
+    

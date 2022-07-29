@@ -1,0 +1,44 @@
+compute_table
+    1
+
+pri_cols
+    Division
+    Last annual performance rating
+
+sec_cols
+    Grade
+
+cat_cols_to_expand
+    Division
+    Status
+    Gender
+
+num_cols
+    Age
+    Service Years
+
+datetime_cols
+    BirthYear
+
+df_file_path
+    D://Code//datasets/current_data_without_preproc1.csv
+    
+mapping
+    categorical
+        Division
+        Department
+        Location
+        Status
+        Grade
+        Gender
+
+    numerical
+        Age
+        Service Years
+        Personal Development (satisfaction)
+        Support from Company
+        Last annual performance rating
+
+    datetime
+        
+    

@@ -1,0 +1,68 @@
+compute_table
+    1
+
+pri_cols
+    Priority
+    Segment
+    Resolution
+
+sec_cols
+    Priority
+    Segment
+    Resolution
+
+cat_cols_to_expand
+    Collision
+    Legal
+    MapCheck
+    Lighting
+    Performance
+    Geo
+    Textures
+    Material
+    Decals
+    Nazis
+    Krupps
+    Popping
+    Bomb
+    Add
+    LOD
+    Tree
+
+num_cols
+
+
+datetime_cols
+    Created_Time
+
+df_file_path
+    C:\\Users\\sphay\\Downloads\quasiqa_bug_analysis2.csv
+    
+mapping
+    categorical
+        Priority
+        Segment
+        Resolution
+        Collision
+        Legal
+        MapCheck
+        Lighting
+        Performance
+        Geo
+        Textures
+        Material
+        Decals
+        Nazis
+        Krupps
+        Popping
+        Bomb
+        Add
+        LOD
+        Tree
+
+    numerical
+
+
+    datetime
+        Created_Time
+    
