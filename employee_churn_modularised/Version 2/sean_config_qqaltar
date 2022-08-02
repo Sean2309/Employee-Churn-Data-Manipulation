@@ -9,8 +9,9 @@ cat_cols_to_expand
 
 num_cols
 
-
 datetime_cols
+
+text_cols
 
 
 df_file_path
@@ -25,8 +26,8 @@ mapping
 
     numerical
 
-
     datetime
         Created
         Updated
     
+    text

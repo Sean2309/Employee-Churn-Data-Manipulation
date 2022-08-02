@@ -2,23 +2,21 @@ compute_table
     1
 
 pri_cols
-    Division
-    Last annual performance rating
+
 
 sec_cols
-    Grade
+
 
 cat_cols_to_expand
-    Division
-    Status
-    Gender
+
 
 num_cols
-    Age
-    Service Years
+
 
 datetime_cols
-    BirthYear
+
+
+text_cols
 
 df_file_path
     D://Code//datasets/current_data_without_preproc1.csv
@@ -40,5 +38,6 @@ mapping
         Last annual performance rating
 
     datetime
-        
+
+    text
     
