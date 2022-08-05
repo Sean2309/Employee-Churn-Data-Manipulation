@@ -1,6 +1,15 @@
 compute_table
     1
 
+threshold_nan_pct
+    0.2
+
+threshold_x_tick_labels_cat
+    10
+
+threshold_x_tick_labels_num
+    50
+
 pri_cols
 
 sec_cols
@@ -19,15 +28,9 @@ df_file_path
     
 mapping
     categorical
-        Status
-        Priority
-        Custom field (Bug Severity)
-        Custom field (Frequency)
 
     numerical
 
     datetime
-        Created
-        Updated
-    
+
     text

@@ -1,6 +1,15 @@
 compute_table
     1
 
+threshold_nan_pct
+    0.2
+
+threshold_x_tick_labels_cat
+    10
+
+threshold_x_tick_labels_num
+    50
+
 pri_cols
 
 
@@ -31,11 +40,11 @@ mapping
         Gender
 
     numerical
-        Age
         Service Years
         Personal Development (satisfaction)
         Support from Company
         Last annual performance rating
+        Job Satisfaction
 
     datetime
 

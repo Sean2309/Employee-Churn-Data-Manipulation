@@ -1,18 +1,24 @@
 compute_table
     1
+    
+threshold_nan_pct
+    0.2
+
+threshold_x_tick_labels_cat
+    10
+
+threshold_x_tick_labels_num
+    50
 
 pri_cols
 
 sec_cols
 
-
-cat_cols_to_expand
+cat_cols_to_expand  
 
 num_cols
 
-
 datetime_cols
-    Created_Time
 
 df_file_path
     C:\\Users\\sphay\\Downloads\quasiqa_bug_analysis2.csv
@@ -20,10 +26,9 @@ df_file_path
 mapping
     categorical
 
-
     numerical
-
 
     datetime
 
+    text
     
