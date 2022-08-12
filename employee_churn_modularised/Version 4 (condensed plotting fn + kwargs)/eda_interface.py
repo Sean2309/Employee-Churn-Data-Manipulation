@@ -15,7 +15,7 @@ import pathlib
 from warnings import simplefilter
 # from opera_backend_wordcloud import wordcloud_plot
 # from opera_backend_seaborn import plot
-from eda_backend_pandas import set_x_tick_limit, check_if_datetime_1, check_if_float, check_if_int, check_if_cat, df_drop, df_replace, dtype_conversion, expand_categorical_cols
+from eda_backend_pandas import set_x_tick_limit, check_if_datetime_1, check_if_float, check_if_int, check_if_cat, df_drop, df_clean_colnames_colvals, dtype_conversion, expand_categorical_cols
 
 # ----------------------------------------------------
 # df parsing functions
@@ -238,10 +238,10 @@ def gen_viz(argv):
     # except:
     #     df = pd.read_csv(df_file_path, encoding="cp1252", infer_datetime_format=True)
 
-    # df = df_drop(df, threshold_nan_pct)
-    # mapping = _create_mapping_dict(df, mapping)
-    # df = dtype_conversion(df, mapping)
-    # df = df_replace(df)
+    df = df_drop(df, threshold_nan_pct)
+    df = df_clean_colnames_colvals(df)
+    mapping = _create_mapping_dict(df, mapping)
+    df = dtype_conversion(df, mapping)
 
     for k,v in inv_mapping.items():
         d[v] = d.get(v, []) + [k]

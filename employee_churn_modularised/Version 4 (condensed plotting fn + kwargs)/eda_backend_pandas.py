@@ -1,7 +1,13 @@
 import pandas as pd
 import numpy as np
 
-def set_x_tick_limit(viz_df: pd.DataFrame, l: list, datatype: str, mapping: dict, threshold: int = 8) -> list:
+def set_x_tick_limit(
+    viz_df: pd.DataFrame, 
+    l: list, 
+    datatype: str, 
+    mapping: dict, 
+    threshold: int = 8
+) -> list:
     """
     Returns minimised list of df cols
     """
@@ -70,7 +76,7 @@ def df_drop(df, threshold: float = 0.2):
             df = df.drop(col, axis=1)
     return df
 
-def df_replace(df):
+def df_clean_colnames_colvals(df):
     """
     Remove symbols in col headers + values
     """
@@ -82,13 +88,19 @@ def df_replace(df):
     for j in symbols_v:
         df = df.replace(j, "", regex=True)
     df.replace("-", "/", regex=True)
+    df = df.astype("str")
     return df
 
-def dtype_conversion(df: pd.DataFrame, mapping: dict) -> pd.DataFrame:
+def dtype_conversion(
+    df: pd.DataFrame, 
+    mapping: dict
+) -> pd.DataFrame:
     """
     Based on mapping dict => converts df cols to their respective dtype
 
     len() > 11 => Incoming datetimeformat e.g " 2022 05:10"
+
+    .dt accessor must operate on the datetime col => returns an Index of formatted strs => 2 conversions to datetime needed
 
     """
     for k, v in mapping.items():
@@ -96,8 +108,13 @@ def dtype_conversion(df: pd.DataFrame, mapping: dict) -> pd.DataFrame:
             df[k] = df[k].astype("float64")
             continue
         elif v == "datetime":
-            df[k] = pd.to_datetime(df[k])
-            df[k] = df[k].dt.strftime("%d/%m/%Y")
+            df[k] = df[k].astype("datetime64")
+            if df[k].nunique() > 500:
+                df[k] = df[k].dt.strftime("%Y")
+            elif df[k].nunique() > 200:
+                df[k] = df[k].dt.strftime("%m/%Y")
+            else:
+                df[k] = df[k].dt.strftime("%d/%m/%Y")
             continue
     return df
 
