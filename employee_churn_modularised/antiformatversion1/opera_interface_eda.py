@@ -7,11 +7,10 @@ import copy
 import datetime
 import itertools
 import pathlib
-import opera_util_common
 
 from warnings import simplefilter
 from opera_backend_wordcloud import wordcloud_plot
-from opera_backend_seaborn import plot
+from opera_backend_seaborn import plot_all_relevant
 from opera_backend_pandas import df_read, set_x_tick_limit, split_cols_exceeding_thresh, check_if_datetime_1, check_if_datetime_2, check_if_float, check_if_int, check_if_cat, df_drop, df_clean_colnames_colvals, dtype_conversion
 
 # ----------------------------------------------------
@@ -127,14 +126,6 @@ def appending_to_cols(l: list,name_of_l: str, mapping: dict):
 # ----------------------------------------------------
 # viz function
 # ----------------------------------------------------
-class plotting_logic:
-    def __init__(self, univariate, bivariate) -> None:
-        self.univariate = univariate
-        self.bivariate = bivariate
-
-    def univariate_logic(self):
-        ...
-    ...
 
 def viz(
     viz_df: pd.DataFrame,
@@ -148,69 +139,85 @@ def viz(
     dest_path: str,
     palette: str
 ):  
-    viz_df_og = copy.deepcopy(viz_df)
+    """
+    Iterative function that forms different combinations of the lists of cols for:
+        Univariate analysis
+        Bivariate analysis
+    """
     univariate_path = dest_path + "\\Univariate_Plots"
     bivariate_path = dest_path + "\\Bivariate_Plots"
     wordcloud_path = dest_path + "\\WordCloud_Plots"
     x_label_l, x_label_split = set_x_tick_limit(viz_df, x_label_l, "categorical", mapping, threshold_x_tick_labels_cat)
     hue_label_l, l = set_x_tick_limit(viz_df, hue_label_l, "categorical", mapping, threshold_x_tick_labels_cat)
-    # univariate_label_l = list(pd.Series(x_label_l + hue_label_l + y_label_l_num).drop_duplicates())
     univariate_label_l = list(pd.Series(x_label_l + hue_label_l + y_label_l + x_label_split).drop_duplicates())
 
-    print((x_label_split[0]))
-    """
-    WIP
-
-    viz_df_og = copy.deepcopy(viz_df)
-    # univariate_label_l = list(pd.Series(x_label_l + hue_label_l + y_label_l_num + x_label_split).drop_duplicates())
-    """
     d = split_cols_exceeding_thresh(df=viz_df, thresh=threshold_x_tick_labels_cat, label_l=x_label_split)
 
-    # for j in text_cols_l:
-    #     wordcloud_plot(viz_df, wordcloud_path, j)
+    for j in text_cols_l:
+        wordcloud_plot(viz_df, wordcloud_path, j)
+
     for i in hue_label_l:
-        counter = 1
         hue_label = i
         hue_label = ''.join(hue_label)
 
         ## Univariate analysis
         for x_label in univariate_label_l:
-            d1 = {}
             dtype = ""
             if x_label in x_label_split:
-                for i in range(len(d[x_label].keys())):
-                    viz_df = viz_df.loc[viz_df[x_label].isin(list(d[x_label][counter]))]
-                    counter += 1
-            print("\nx label iteration: " + str(x_label) + "    hue label: " + str(hue_label))
-            if (x_label != hue_label) and (mapping[x_label] == "numerical"):
-                dtype = "num"
-                plot(plot_type="hist", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=univariate_path, dtype=dtype, palette=palette)
-                plot(plot_type="kde", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=univariate_path, dtype=dtype, palette=palette)
-                plot(plot_type="ecdf", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=univariate_path, dtype=dtype, palette=palette)
-            elif (x_label != hue_label) and (mapping[x_label] == "categorical"):
-                plot(plot_type="hist", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=univariate_path, dtype=dtype, palette=palette)
-            viz_df = copy.deepcopy(viz_df_og)
+                for i in range(len(d[x_label].keys())): 
+                    dtype = ""
+                    viz_df_a = viz_df.loc[viz_df[x_label].isin(list(d[x_label][i]))]
+                    plot_all_relevant(
+                        viz_df=viz_df_a, 
+                        mapping=mapping, 
+                        x_label=x_label, 
+                        hue_label=hue_label, 
+                        dest_path=univariate_path, 
+                        dtype=dtype, 
+                        palette=palette,
+                        iteration=i
+                    )
+            else:
+                plot_all_relevant(
+                            viz_df=viz_df, 
+                            mapping=mapping, 
+                            x_label=x_label, 
+                            hue_label=hue_label, 
+                            dest_path=univariate_path, 
+                            dtype=dtype, 
+                            palette=palette
+                        )
         print(f"\nUnivariate Analysis completed for {i}\n\nBivariate Analysis starting")
 
-    #     ## Bivariate analysis
-    #     for (x_label, y_label) in itertools.product(x_label_l, y_label_l):
-    #         dtype = ""
-    #         print("\nx label iteration: " + str(x_label) + "    y label iteration: " + str(y_label) + "    hue label: " + str(hue_label))
-
-    #         if (x_label != hue_label) and (mapping[x_label] == "categorical") and (mapping[y_label] == "numerical"):
-    #             plot(plot_type="box", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=bivariate_path, dtype=dtype, y_label=y_label, palette=palette)
-    #             plot(plot_type="bar", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=bivariate_path, dtype=dtype, y_label=y_label, palette=palette)
-    #             plot(plot_type="violin", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=bivariate_path, dtype=dtype, y_label=y_label, palette=palette)
-
-    #         elif (x_label != hue_label) and (mapping[x_label] == "numerical") and (mapping[y_label] == "numerical"):
-    #             dtype = "num"
-    #             plot(plot_type="hist", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=bivariate_path, dtype=dtype, y_label=y_label, palette=palette)
-    #             plot(plot_type="scatter", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=bivariate_path, dtype=dtype, y_label=y_label, palette=palette)
-    #             plot(plot_type="line", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=bivariate_path, dtype=dtype, y_label=y_label, palette=palette)
-
-    #         elif (x_label != hue_label) and (mapping[x_label] == "datetime") and (mapping[y_label] == "numerical"):
-    #             plot(plot_type="line", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=bivariate_path, dtype=dtype, y_label=y_label, palette=palette)
-    #     print(f"\nBivariate Analysis completed for {i}")
+        # Bivariate analysis
+        for (x_label, y_label) in itertools.product(x_label_l, y_label_l):
+            dtype = ""
+            if x_label in x_label_split:
+                for i in range(len(d[x_label].keys())): 
+                    dtype = ""
+                    viz_df_a = viz_df.loc[viz_df[x_label].isin(list(d[x_label][i]))]
+                    plot_all_relevant(
+                        viz_df=viz_df_a, 
+                        mapping=mapping, 
+                        x_label=x_label, 
+                        hue_label=hue_label, 
+                        dest_path=bivariate_path, 
+                        dtype=dtype, 
+                        palette=palette,
+                        y_label=y_label,
+                        iteration=i
+                    )
+            plot_all_relevant(
+                        viz_df=viz_df, 
+                        mapping=mapping, 
+                        x_label=x_label, 
+                        hue_label=hue_label, 
+                        dest_path=bivariate_path, 
+                        dtype=dtype, 
+                        palette=palette,
+                        y_label=y_label
+                    )
+        print(f"\nBivariate Analysis completed for {i}")
 
 # ----------------------------------------------------
 # init functions
@@ -248,7 +255,8 @@ def gen_viz_workflow(
         a = appending_to_cols(ls, names, inv_mapping)
         ls.extend(a)
     pri_cols += datetime_cols
-    # print("Mapping:\n"+str(inv_mapping))
+    print("Mapping:\n"+str(inv_mapping))
+
     """
     Creation of dest folder for viz
     """
@@ -311,6 +319,7 @@ def gen_viz(context_engine: C):
     custom_settings(markersize=markersize, linewidth=linewidth, labelsize=labelsize)
     df_file = df_file_path.rsplit(sep="\\")[-1].split(sep=".")[0]
     ext = df_file_path.rsplit(".", 1)[-1]
+
     """
     Read df based on file type => Main workflow fn starts
     """

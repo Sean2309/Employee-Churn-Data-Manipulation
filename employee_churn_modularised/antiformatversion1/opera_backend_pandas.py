@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import opera_util_common
 
 def set_x_tick_limit(
     viz_df: pd.DataFrame, 
@@ -26,12 +25,18 @@ def split_l(
     l: list,
     n: int
 ):  
-    return [l[i::n] for i in range(n)]
+    """
+    Splitting the sorted unique vals which are above the cat threshold
+    """
+    return np.array_split(l, n)    
 
 def gen_var(
     n: int
 ):  
-    return [i+1 for i in range(0, n)]
+    """
+    Generating a list of int variables to pair with the output lists of split col vals
+    """
+    return [i for i in range(0, n)]
 
 def split_cols_exceeding_thresh(
     df: pd.DataFrame,
@@ -49,8 +54,8 @@ def split_cols_exceeding_thresh(
     d = {}
     for i in label_l:
         d[i] = {}
-        n_cuts = int(np.floor((df[i].nunique()) / thresh))
-        l = df[i].unique()
+        n_cuts = int(np.ceil((df[i].nunique()) / thresh))
+        l = pd.Series(df[i].unique()).sort_values()
         col_names_l = split_l(l, n_cuts)
         var_name_l = gen_var(n_cuts)
         for j in range(len(var_name_l)):
@@ -69,10 +74,14 @@ def check_if_datetime_2(s: pd.Series) -> bool:
     i = s.first_valid_index()
     s = s[i]
     l = s.split("/", 3)[-1]
-    if opera_util_common.jazz_antiformat.main(pattern, s) and (len(l[-1]) < 11):
-        return True
-    else:
-        return False
+    # find out another way to extract the pattern for datetime
+    """
+    (len(l[-1]) < 11)
+    """
+    
+    #     return True
+    # else:
+    #     return False
 
 def check_if_float(s: pd.Series) -> bool:
     try:
