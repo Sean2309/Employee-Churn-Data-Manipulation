@@ -2,16 +2,24 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import os
+import sys
 import time
 import copy
 import datetime
 import itertools
 import pathlib
+import opera_util_common
 
 from warnings import simplefilter
 from opera_backend_wordcloud import wordcloud_plot
 from opera_backend_seaborn import plot_all_relevant
-from opera_backend_pandas import df_read, set_x_tick_limit, split_cols_exceeding_thresh, check_if_datetime_1, check_if_datetime_2, check_if_float, check_if_int, check_if_cat, df_drop, df_clean_colnames_colvals, dtype_conversion
+from opera_backend_pandas import df_read, split_cols_by_nunique, split_cols_exceeding_thresh, check_if_datetime_1, check_if_datetime_2, check_if_float, check_if_int, check_if_cat, df_drop, df_clean_colnames_colvals, dtype_conversion
+
+
+UNIVARIATE = "Univariate_Plots"
+BIVARIATE = "Bivariate_Plots"
+WORDCLOUD = "WordCloud_Plots"
+
 
 # ----------------------------------------------------
 # mapping dict functions
@@ -20,46 +28,41 @@ def _create_mapping_dict(df: pd.DataFrame, mapping: dict) -> dict:
     """
     Generation of mapping dict => from input mapping AND/OR df
     """
-    d = {}
+    col_to_type = {}
     df = df.astype("str")
     for k, v in mapping.items():
-        keys_l = list(v.keys())
-        if keys_l:
-            d.update({i: k for i in keys_l})
+        for col in v.keys():
+            col_to_type[col] = k
     for col in df.columns:
-        if col not in d:
-            if check_if_datetime_1(df[col]):
-                if check_if_datetime_2(df[col]):
-                    d[col] = 'datetime'
-                    continue
+        if col not in col_to_type:
+            if check_if_datetime_1(df[col]) and check_if_datetime_2(df[col]):
+                col_to_type[col] = 'datetime'
+                continue
             elif check_if_float(df[col]):
                 if check_if_cat(df[col]):
-                    d[col] = 'categorical'
+                    col_to_type[col] = 'categorical'
                 else:
-                    d[col] = 'numerical'
+                    col_to_type[col] = 'numerical'
                 continue
             elif check_if_int(df[col]):
                 if check_if_cat(df[col]):
-                    d[col] = 'categorical'
+                    col_to_type[col] = 'categorical'
                 else:
-                    d[col] = 'numerical'
+                    col_to_type[col] = 'numerical'
                 continue
             elif check_if_cat(df[col]): 
-                d[col] = 'categorical'
+                col_to_type[col] = 'categorical'
                 continue
             else:
-                d[col] = 'text'
+                col_to_type[col] = 'text'
                 continue
-    return d
+    return col_to_type
 
 # ----------------------------------------------------
 # misc functions
 # ----------------------------------------------------
-def get_ctx(file):
-    ctx = opera_util_common.parse_ps_to_ctx(file)
-    return ctx
 
-def convert(a) -> list:
+def get_value_from_ctx(a) -> list:
     """
     Returns elements of [a] in txt config file
     """
@@ -85,10 +88,10 @@ def create_dest_folder(
     current_dir = os.getcwd()
     current_datetime = datetime.datetime.now().strftime("%d.%m.%Y_%H%M")
     dest_path = current_dir+'\\'+current_datetime + "_Visualisation_" + df_file + sheet_name
-    univariate_path = dest_path + "\\Univariate_Plots"
-    bivariate_path = dest_path + "\\Bivariate_Plots"
-    wordcloud_path = dest_path + "\\WordCloud_Plots"
-    path_l = [univariate_path, bivariate_path, wordcloud_path]
+    UNIVARIATE_PATH = os.path.join(dest_path, UNIVARIATE)
+    BIVARIATE_PATH = os.path.join(dest_path, BIVARIATE)
+    WORDCLOUD_PATH = os.path.join(dest_path, WORDCLOUD)
+    path_l = [UNIVARIATE_PATH, BIVARIATE_PATH, WORDCLOUD_PATH]
     for i in path_l:
         pathlib.Path(i).mkdir(parents=True, exist_ok=True)
     return dest_path
@@ -100,12 +103,13 @@ def create_readme(
     datetime_cols: list,
     text_cols: list,
     dest_path: str,
+    encoding: str
 ):
-    readme_l = ["File Naming Conventions\nUnivariate Plots:\n[Name of Visual] of [x axis] & [legend]\n\nBivariate Plots:\n[Name of Visual] of [x axis] & [y axis] & [legend]\n\nConfig File Inputs\n\nPri Cols: ", str(pri_cols), "\n\nSec Cols: ", str(sec_cols), "\n\nNumerical Cols: ", str(num_cols) + "\n\nDatetime Cols: " + str(datetime_cols), "\n\nText Cols: " +str(text_cols)]
-    with open(dest_path + "/README.txt", "w") as f:
+    readme_l = ["File Naming Conventions\nUnivariate Plots:\n[Name of Visual] of [x axis] & [legend] [iteration*]\n\nBivariate Plots:\n[Name of Visual] of [x axis] & [y axis] & [legend] [iteration*]\n\nConfig File Inputs\n\nPri Cols: ", str(pri_cols), "\n\nSec Cols: ", str(sec_cols), "\n\nNumerical Cols: ", str(num_cols) + "\n\nDatetime Cols: " + str(datetime_cols), "\n\nText Cols: " +str(text_cols)]
+    with open(os.path.join(dest_path,"README.txt"), "w", encoding=encoding) as f:
         f.writelines(readme_l)
 
-def appending_to_cols(l: list,name_of_l: str, mapping: dict):
+def get_additional_cols_mappings(l: list, name_of_l: str, mapping: dict):
     """
     Returns list of df cols, classified based on col dtype
     """
@@ -131,7 +135,6 @@ def viz(
     viz_df: pd.DataFrame,
     mapping: dict,
     threshold_x_tick_labels_cat: int,
-    threshold_x_tick_labels_num: int,
     x_label_l: list,
     hue_label_l: list,
     y_label_l: list,
@@ -144,35 +147,32 @@ def viz(
         Univariate analysis
         Bivariate analysis
     """
-    univariate_path = dest_path + "\\Univariate_Plots"
-    bivariate_path = dest_path + "\\Bivariate_Plots"
-    wordcloud_path = dest_path + "\\WordCloud_Plots"
-    x_label_l, x_label_split = set_x_tick_limit(viz_df, x_label_l, "categorical", mapping, threshold_x_tick_labels_cat)
-    hue_label_l, l = set_x_tick_limit(viz_df, hue_label_l, "categorical", mapping, threshold_x_tick_labels_cat)
-    univariate_label_l = list(pd.Series(x_label_l + hue_label_l + y_label_l + x_label_split).drop_duplicates())
-
-    d = split_cols_exceeding_thresh(df=viz_df, thresh=threshold_x_tick_labels_cat, label_l=x_label_split)
-
+    UNIVARIATE_PATH = os.path.join(dest_path, UNIVARIATE)
+    BIVARIATE_PATH = os.path.join(dest_path, BIVARIATE)
+    WORDCLOUD_PATH = os.path.join(dest_path, WORDCLOUD)
+    x_valid, x_exceed_thresh = split_cols_by_nunique(viz_df, x_label_l, "categorical", mapping, threshold_x_tick_labels_cat)
+    hue_label_l, _ = split_cols_by_nunique(viz_df, hue_label_l, "categorical", mapping, threshold_x_tick_labels_cat)
+    univariate_label_l = list(pd.Series(x_valid + hue_label_l + y_label_l + x_exceed_thresh).drop_duplicates())
+    dict_split_cols = split_cols_exceeding_thresh(df=viz_df, thresh=threshold_x_tick_labels_cat, label_l=x_exceed_thresh)
     for j in text_cols_l:
-        wordcloud_plot(viz_df, wordcloud_path, j)
+        wordcloud_plot(viz_df, WORDCLOUD_PATH, j)
 
     for i in hue_label_l:
         hue_label = i
         hue_label = ''.join(hue_label)
-
         ## Univariate analysis
         for x_label in univariate_label_l:
             dtype = ""
-            if x_label in x_label_split:
-                for i in range(len(d[x_label].keys())): 
+            if x_label in x_exceed_thresh:
+                for i in range(len(dict_split_cols[x_label].keys())): 
                     dtype = ""
-                    viz_df_a = viz_df.loc[viz_df[x_label].isin(list(d[x_label][i]))]
+                    viz_df_a = viz_df.loc[viz_df[x_label].isin(list(dict_split_cols[x_label][i]))]
                     plot_all_relevant(
                         viz_df=viz_df_a, 
                         mapping=mapping, 
                         x_label=x_label, 
                         hue_label=hue_label, 
-                        dest_path=univariate_path, 
+                        dest_path=UNIVARIATE_PATH, 
                         dtype=dtype, 
                         palette=palette,
                         iteration=i
@@ -183,25 +183,25 @@ def viz(
                             mapping=mapping, 
                             x_label=x_label, 
                             hue_label=hue_label, 
-                            dest_path=univariate_path, 
+                            dest_path=UNIVARIATE_PATH, 
                             dtype=dtype, 
                             palette=palette
                         )
         print(f"\nUnivariate Analysis completed for {i}\n\nBivariate Analysis starting")
 
         # Bivariate analysis
-        for (x_label, y_label) in itertools.product(x_label_l, y_label_l):
+        for (x_label, y_label) in itertools.product(x_valid, y_label_l):
             dtype = ""
-            if x_label in x_label_split:
-                for i in range(len(d[x_label].keys())): 
+            if x_label in x_exceed_thresh:
+                for i in range(len(dict_split_cols[x_label].keys())): 
                     dtype = ""
-                    viz_df_a = viz_df.loc[viz_df[x_label].isin(list(d[x_label][i]))]
+                    viz_df_a = viz_df.loc[viz_df[x_label].isin(list(dict_split_cols[x_label][i]))]
                     plot_all_relevant(
                         viz_df=viz_df_a, 
                         mapping=mapping, 
                         x_label=x_label, 
                         hue_label=hue_label, 
-                        dest_path=bivariate_path, 
+                        dest_path=BIVARIATE_PATH, 
                         dtype=dtype, 
                         palette=palette,
                         y_label=y_label,
@@ -212,7 +212,7 @@ def viz(
                         mapping=mapping, 
                         x_label=x_label, 
                         hue_label=hue_label, 
-                        dest_path=bivariate_path, 
+                        dest_path=BIVARIATE_PATH, 
                         dtype=dtype, 
                         palette=palette,
                         y_label=y_label
@@ -226,7 +226,6 @@ def gen_viz_workflow(
     df: pd.DataFrame,
     threshold_nan_pct: float,
     threshold_x_tick_labels_cat: int,
-    threshold_x_tick_labels_num: int,
     pri_cols: list,
     sec_cols: list,
     num_cols: list,
@@ -235,28 +234,28 @@ def gen_viz_workflow(
     df_file: str, 
     palette: str,
     mapping: dict,
+    encoding: str,
     sheet_name: str = ""
 ):
     """
     DF Cleaning 
-    Mapping dict generation
+    Mapping Dict generation
+    Label Lists generation 
     """
-    inv_mapping = {}
+    type_to_ls_cols = {}
     df = df_drop(df, threshold_nan_pct)
     df = df_clean_colnames_colvals(df)
-    mapping = _create_mapping_dict(df, mapping)
+    mapping = _create_mapping_dict(df, mapping) 
     df = dtype_conversion(df, mapping)
-
     l = [pri_cols, sec_cols, num_cols, datetime_cols, text_cols]
     names_l = ["pri_cols", "sec_cols", "num_cols", "datetime_cols", "text_cols"]
     for k,v in mapping.items():
-        inv_mapping[v] = inv_mapping.get(v, []) + [k]
+        type_to_ls_cols[v] = type_to_ls_cols.get(v, []) + [k]
     for ls, names in zip(l, names_l):
-        a = appending_to_cols(ls, names, inv_mapping)
-        ls.extend(a)
+        additional_cols = get_additional_cols_mappings(ls, names, type_to_ls_cols)
+        ls.extend(additional_cols)
     pri_cols += datetime_cols
-    print("Mapping:\n"+str(inv_mapping))
-
+    print("Mapping:\n"+str(type_to_ls_cols))
     """
     Creation of dest folder for viz
     """
@@ -270,7 +269,9 @@ def gen_viz_workflow(
         num_cols=num_cols, 
         datetime_cols=datetime_cols, 
         text_cols=text_cols, 
-        dest_path=dest_path)
+        dest_path=dest_path,
+        encoding=encoding
+    )
 
     """
     Main fn workflow:
@@ -281,7 +282,6 @@ def gen_viz_workflow(
         viz_df=df,
         mapping=mapping,
         threshold_x_tick_labels_cat=threshold_x_tick_labels_cat, 
-        threshold_x_tick_labels_num=threshold_x_tick_labels_num, 
         x_label_l=pri_cols, 
         hue_label_l=sec_cols, 
         y_label_l=num_cols, 
@@ -296,44 +296,72 @@ def gen_viz(context_engine: C):
     Parsing inputs
     """
     c = context_engine.k
-    df_file_path = c.df.replace("/", "\\")
+    df_file_path = c.df.replace("/", os.sep)
     config = c.config
-    ctx = get_ctx(config)
-    threshold_nan_pct = convert(ctx.compulsory_inputs.threshold_nan_pct)[0]
-    threshold_x_tick_labels_cat = convert(ctx.compulsory_inputs.threshold_x_tick_labels_cat)[0]
-    threshold_x_tick_labels_num = convert(ctx.compulsory_inputs.threshold_x_tick_labels_num)[0]
-    markersize = convert(ctx.compulsory_inputs.markersize)[0]
-    linewidth = convert(ctx.compulsory_inputs.linewidth)[0]
-    labelsize = convert(ctx.compulsory_inputs.labelsize)[0]
-    palette = convert(ctx.compulsory_inputs.palette)[0]
+    ctx = opera_util_common.parse_ps_to_ctx(config)
+    threshold_nan_pct = get_value_from_ctx(ctx.threshold_nan_pct)[0]
+    threshold_x_tick_labels_cat = get_value_from_ctx(ctx.threshold_x_tick_labels_cat)[0]
+    markersize = get_value_from_ctx(ctx.markersize)[0]
+    linewidth = get_value_from_ctx(ctx.linewidth)[0]
+    labelsize = get_value_from_ctx(ctx.labelsize)[0]
+    palette = get_value_from_ctx(ctx.palette)[0]
 
-    sheet_name = convert(ctx.situational_inputs.sheet_name)
-
-    pri_cols = convert(ctx.optional_inputs.pri_cols)
-    sec_cols = convert(ctx.optional_inputs.sec_cols)
-    num_cols = convert(ctx.optional_inputs.num_cols)
-    datetime_cols = convert(ctx.optional_inputs.datetime_cols)
-    text_cols = convert(ctx.optional_inputs.text_cols)
-    mapping = dict(ctx.optional_inputs.mapping)
-
+    sheet_names = get_value_from_ctx(ctx.sheet_name)
+    pri_cols = get_value_from_ctx(ctx.pri_cols)
+    sec_cols = get_value_from_ctx(ctx.sec_cols)
+    num_cols = get_value_from_ctx(ctx.num_cols)
+    datetime_cols = get_value_from_ctx(ctx.datetime_cols)
+    text_cols = get_value_from_ctx(ctx.text_cols)
+    mapping = ctx.mapping
     custom_settings(markersize=markersize, linewidth=linewidth, labelsize=labelsize)
-    df_file = df_file_path.rsplit(sep="\\")[-1].split(sep=".")[0]
-    ext = df_file_path.rsplit(".", 1)[-1]
-
+    full_file_name, ext = os.path.splitext(df_file_path)
+    df_file = os.path.basename(full_file_name)
+    encoding = sys.getdefaultencoding()
     """
     Read df based on file type => Main workflow fn starts
     """
-    if ext == "xlsx":
-            sheet_name = str(sheet_name[0])
-            df = df_read(
+    if ext == ".xlsx":
+        if not sheet_names:
+            xl = pd.ExcelFile(df_file_path)
+            sheet_names = xl.sheet_names
+        for sheet in sheet_names:
+            #TODO Change this brute force copying if possible
+            print("Current Sheet: "+str(sheet) + "\n")
+            mapping_init = copy.copy(mapping)
+            pri_cols_init = copy.copy(pri_cols)
+            sec_cols_init = copy.copy(sec_cols)
+            num_cols_init = copy.copy(num_cols)
+            datetime_cols_init = copy.copy(datetime_cols)
+            text_cols_init = copy.copy(text_cols)
+            df, encoding = df_read(
                 df_file_path=df_file_path,
-                sheet_name=sheet_name
+                encoding=encoding,
+                sheet_name=sheet,
             )
             gen_viz_workflow(
                 df=df,
                 threshold_nan_pct=threshold_nan_pct, 
                 threshold_x_tick_labels_cat=threshold_x_tick_labels_cat,
-                threshold_x_tick_labels_num=threshold_x_tick_labels_num,
+                pri_cols=pri_cols_init,
+                sec_cols=sec_cols_init,
+                num_cols=num_cols_init,
+                datetime_cols=datetime_cols_init,
+                text_cols=text_cols_init,
+                df_file=df_file,
+                palette=palette,
+                mapping=mapping_init,
+                encoding=encoding,
+                sheet_name=sheet
+            )
+    else:
+        df, encoding = df_read(
+        df_file_path=df_file_path,
+        encoding=encoding
+        )
+        gen_viz_workflow(
+                df=df,
+                threshold_nan_pct=threshold_nan_pct, 
+                threshold_x_tick_labels_cat=threshold_x_tick_labels_cat,
                 pri_cols=pri_cols,
                 sec_cols=sec_cols,
                 num_cols=num_cols,
@@ -342,36 +370,19 @@ def gen_viz(context_engine: C):
                 df_file=df_file,
                 palette=palette,
                 mapping=mapping,
-                sheet_name=sheet_name
-            )
-    else:
-        df = df_read(
-        df_file_path=df_file_path
-        )
-        gen_viz_workflow(
-                df=df,
-                threshold_nan_pct=threshold_nan_pct, 
-                threshold_x_tick_labels_cat=threshold_x_tick_labels_cat,
-                threshold_x_tick_labels_num=threshold_x_tick_labels_num,
-                pri_cols=pri_cols,
-                sec_cols=sec_cols,
-                num_cols=num_cols,
-                datetime_cols=datetime_cols,
-                text_cols=text_cols,
-                df_file=df_file,
-                palette=palette,
-                mapping=mapping
+                encoding=encoding
             )
 
     end = time.time()
     print("Time Taken: " + str(end-start))
     return True
-
+#TODO factorise looping across sheets function
 def infer_col_types(context_engine: C):
     simplefilter(action="ignore")
     c = context_engine.k
-    df_file_path = c.df.replace("/", "\\")
-    mapping = dict(get_ctx(c.config).optional_inputs.mapping)
+    df_file_path = c.df.replace("/", os.sep)
+    mapping = opera_util_common.parse_ps_to_ctx(c.config).mapping
+    mapping = {k:list(v.keys()) for k, v in mapping}
     try:
         df = pd.read_csv(df_file_path, encoding="utf8")
     except:
