@@ -22,7 +22,6 @@ def split_cols_by_nunique(
             l2.append(i)
             continue
     return l1, l2
- 
 
 def split_cols_exceeding_thresh(
     df: pd.DataFrame,
@@ -102,8 +101,8 @@ def check_if_cat(s: pd.Series) -> bool:
     else:
         return False
 
-def df_read(
-    df_file_path: str,
+def read_df(
+    df_path_input: str,
     encoding: str,
     sheet_name: str = ""
 ):
@@ -113,16 +112,15 @@ def df_read(
         csv
     """
     if sheet_name:
-            df = pd.read_excel(df_file_path, sheet_name=sheet_name)
+            df = pd.read_excel(df_path_input, sheet_name=sheet_name)
     else:
         try:
-            df = pd.read_csv(df_file_path, encoding=encoding, infer_datetime_format=True)
+            df = pd.read_csv(df_path_input, encoding=encoding, infer_datetime_format=True)
         except:
-            df = pd.read_csv(df_file_path, encoding="cp1252", infer_datetime_format=True)
+            df = pd.read_csv(df_path_input, encoding="cp1252", infer_datetime_format=True)
             encoding = "cp1252"
     return df, encoding
 
-#TODO Remove ID column? For most scenarios ID col is trivial for EDA
 def df_drop(
     df: pd.DataFrame, 
     threshold: float = 0.2
@@ -132,9 +130,9 @@ def df_drop(
         1) >= 20% NaN values
         2) 1 unique value
     """
-    df = df.dropna(axis=1, thresh = 0.1*len(df))
+    df = df.dropna(axis=1, thresh = threshold*len(df))
     for col in df.columns:
-        if df[col].nunique() == 1:
+        if df[col].nunique() == 1 or df[col].nunique() == df.shape[0]:
             df = df.drop(col, axis=1)
     return df
 
@@ -168,7 +166,7 @@ def dtype_conversion(
         if v == "numerical":
             df[k] = df[k].astype("float64")
         elif v == "datetime":
-            df[k] = df[k].astype("datetime64")
+            df[k] = df[k].astype("datetime64[ns]")
             if df[k].nunique() > 500:
                 df[k] = df[k].dt.strftime("%Y")
             elif df[k].nunique() > 200:

@@ -4,9 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import opera_util_common
-# ----------------------------------------------------
-# misc functions
-# ----------------------------------------------------
+
 PLOTS_TO_FUNC = C(
     hist=sns.histplot,
     kde=sns.kdeplot,
@@ -18,6 +16,9 @@ PLOTS_TO_FUNC = C(
     ecdf=sns.ecdfplot
 )
 
+# ----------------------------------------------------
+# misc functions
+# ----------------------------------------------------
 def rotate_axis(
     fig,
     plot_type: str
@@ -42,10 +43,9 @@ def save_sns_viz(
     dest_path: str,
     fig,
     dtype: str,
-    plot_type: str
 ):
     locs, labels = plt.xticks()
-    if rotate_axis(fig, plot_type):
+    if rotate_axis(fig, dtype):
         plt.setp(labels, rotation=90, horizontalalignment="right")
     else:
         plt.setp(labels, horizontalalignment="right")
@@ -106,7 +106,7 @@ def plot(
         else:
             file_name = f"{plot_type}plot_of_{x_label}_&_{y_label}_&_{hue_label}_{iteration}.png"
     sns.move_legend(fig, "upper left", bbox_to_anchor=(1.04, 1))
-    save_sns_viz(s=s, file_name=file_name, dest_path=dest_path, fig=fig, dtype=dtype, plot_type=plot_type)
+    save_sns_viz(s=s, file_name=file_name, dest_path=dest_path, fig=fig, dtype=dtype)
 
 def plot_all_relevant(
     viz_df: pd.DataFrame,
@@ -127,24 +127,23 @@ def plot_all_relevant(
         if (x_label != hue_label) and (mapping[x_label] == "numerical" or mapping[x_label] == "datetime"):
             dtype = "num"
             plot_types = ['hist', 'kde', 'ecdf']
-            for t in plot_types:
-                plot(plot_type=t, viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, palette=palette, iteration=iteration)
+            for plot_type in plot_types:
+                plot(plot_type=plot_type, viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, palette=palette, iteration=iteration)
         elif (x_label != hue_label) and (mapping[x_label] == "categorical"):
-            #TODO assess why bar plot legends are disappearing
             plot(plot_type="hist", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, palette=palette, iteration=iteration)
         
     else:
         print("\nx label: " + str(x_label) + "    y label: " + str(y_label) + "    hue label: " + str(hue_label))
         if (x_label != hue_label) and (mapping[x_label] == "categorical") and (mapping[y_label] == "numerical"):
             plot_types = ["boxen", "bar", "violin"]
-            for t in plot_types:
-                plot(plot_type=t, viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, y_label=y_label, palette=palette, iteration=iteration)
+            for plot_type in plot_types:
+                plot(plot_type=plot_type, viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, y_label=y_label, palette=palette, iteration=iteration)
 
         elif (x_label != hue_label) and (mapping[x_label] == "numerical") and (mapping[y_label] == "numerical"):
             dtype = "num"
             plot_types = ["hist", "scatter", "line"]
-            for t in plot_types:
-                plot(plot_type="hist", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, y_label=y_label, palette=palette, iteration=iteration)
+            for plot_type in plot_types:
+                plot(plot_type=plot_type, viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, y_label=y_label, palette=palette, iteration=iteration)
 
         elif (x_label != hue_label) and (mapping[x_label] == "datetime") and (mapping[y_label] == "numerical"):
             plot(plot_type="line", viz_df=viz_df, x_label=x_label, hue_label=hue_label, dest_path=dest_path, dtype=dtype, y_label=y_label, palette=palette, iteration=iteration)
