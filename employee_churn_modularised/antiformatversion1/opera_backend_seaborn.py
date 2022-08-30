@@ -43,10 +43,9 @@ def save_sns_viz(
     dest_path: str,
     fig,
     dtype: str,
-    plot_type: str
 ):
     locs, labels = plt.xticks()
-    if rotate_axis(fig, plot_type):
+    if rotate_axis(fig, dtype):
         plt.setp(labels, rotation=90, horizontalalignment="right")
     else:
         plt.setp(labels, horizontalalignment="right")
@@ -107,7 +106,7 @@ def plot(
         else:
             file_name = f"{plot_type}plot_of_{x_label}_&_{y_label}_&_{hue_label}_{iteration}.png"
     sns.move_legend(fig, "upper left", bbox_to_anchor=(1.04, 1))
-    save_sns_viz(s=s, file_name=file_name, dest_path=dest_path, fig=fig, dtype=dtype, plot_type=plot_type)
+    save_sns_viz(s=s, file_name=file_name, dest_path=dest_path, fig=fig, dtype=dtype)
 
 def plot_all_relevant(
     viz_df: pd.DataFrame,

@@ -130,7 +130,7 @@ def df_drop(
         1) >= 20% NaN values
         2) 1 unique value
     """
-    df = df.dropna(axis=1, thresh = 0.1*len(df))
+    df = df.dropna(axis=1, thresh = threshold*len(df))
     for col in df.columns:
         if df[col].nunique() == 1 or df[col].nunique() == df.shape[0]:
             df = df.drop(col, axis=1)
