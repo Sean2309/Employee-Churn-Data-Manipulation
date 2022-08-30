@@ -22,7 +22,7 @@ WORDCLOUD = "WordCloud_Plots"
 # ----------------------------------------------------
 # mapping dict fn
 # ----------------------------------------------------
-def _create_mapping_dict(df: pd.DataFrame, mapping: dict) -> dict:
+def _infer_mapping(df: pd.DataFrame, mapping: dict) -> dict:
     """
     Generation of mapping dict => from input mapping AND/OR df
     """
@@ -121,7 +121,7 @@ def get_additional_cols_mappings(l: list, name_of_l: str, mapping: dict):
             l = mapping["text"]
         return l
     else:
-        return []
+        return l
 
 def convert_type_to_ls_cols(
     mapping: dict
@@ -242,35 +242,38 @@ def gen_viz_workflow(
 ):
     """
     (A) Preprocessing of Data + Generation of mapping dict
-    (B) Init of plot variables
+    (B) Init + Updating of plot variables
     (C) Creation of dest folder
     (D) Viz fn
     """
-    type_to_ls_cols = {}
+    final_mapping = {}
+    final_ls = []
+    l = [pri_cols, sec_cols, num_cols, datetime_cols, text_cols]
+    names_l = ["pri_cols", "sec_cols", "num_cols", "datetime_cols", "text_cols"]
+
+    final_mapping.update(mapping)
 
     # (A1) Preprocessing DF
     df = df_drop(df, max_NaN_percent_in_dfcol)
     df = df_clean_colnames_colvals(df)
     # (A2) Generation of mapping dict
-    mapping = _create_mapping_dict(df, mapping) 
+    final_mapping = _infer_mapping(df, final_mapping) 
     # (A1) Preprocessing DF
-    df = dtype_conversion(df, mapping)
+    df = dtype_conversion(df, final_mapping)
 
     # (B)
-    l = [pri_cols, sec_cols, num_cols, datetime_cols, text_cols]
-    names_l = ["pri_cols", "sec_cols", "num_cols", "datetime_cols", "text_cols"]
-    type_to_ls_cols = convert_type_to_ls_cols(mapping=mapping)
+    type_to_ls_cols = convert_type_to_ls_cols(mapping=final_mapping)
     for ls, names in zip(l, names_l):
         additional_cols = get_additional_cols_mappings(ls, names, type_to_ls_cols)
-        ls.extend(additional_cols)
-    pri_cols += datetime_cols
-    print(f"Mapping:\n{type_to_ls_cols}")
-    
+        final_ls.append(additional_cols)
+    print(f"Mapping:\n{type_to_ls_cols}\n\n")
+
     # (C)
     dest_path = create_dest_folder(
         df_file_name=df_file_name,
         sheet_name=sheet_name
     )
+    pri_cols, sec_cols, num_cols, datetime_cols, text_cols = final_ls
     create_readme(
         pri_cols=pri_cols, 
         sec_cols=sec_cols, 
@@ -280,11 +283,12 @@ def gen_viz_workflow(
         dest_path=dest_path,
         encoding=encoding
     )
-
+    pri_cols += datetime_cols
+    
     # (D)
     viz(
         viz_df=df,
-        mapping=mapping,
+        mapping=final_mapping,
         max_number_of_x_ticklabels_per_graphplot=max_number_of_x_ticklabels_per_graphplot, 
         x_label_l=pri_cols, 
         hue_label_l=sec_cols, 
@@ -322,8 +326,6 @@ def iterate_through_sheets(
             xl = pd.ExcelFile(df_path_input)
             sheet_names = xl.sheet_names
         for sheet in sheet_names:
-            #TODO Change this brute force copying if possible
-            mapping_init = copy.copy(mapping)
             df, encoding = read_df(
                 df_path_input=df_path_input,
                 encoding=encoding,
@@ -331,30 +333,25 @@ def iterate_through_sheets(
             )
             if engine == "gen_viz":
                 print(f"\nCurrent Sheet: {sheet}")
-                pri_cols_init = copy.copy(pri_cols)
-                sec_cols_init = copy.copy(sec_cols)
-                num_cols_init = copy.copy(num_cols)
-                datetime_cols_init = copy.copy(datetime_cols)
-                text_cols_init = copy.copy(text_cols)
                 gen_viz_workflow(
                     df=df,
                     df_file_name=df_file_name,
                     max_NaN_percent_in_dfcol=max_NaN_percent_in_dfcol, 
                     max_number_of_x_ticklabels_per_graphplot=max_number_of_x_ticklabels_per_graphplot,
-                    pri_cols=pri_cols_init,
-                    sec_cols=sec_cols_init,
-                    num_cols=num_cols_init,
-                    datetime_cols=datetime_cols_init,
-                    text_cols=text_cols_init,
+                    pri_cols=pri_cols,
+                    sec_cols=sec_cols,
+                    num_cols=num_cols,
+                    datetime_cols=datetime_cols,
+                    text_cols=text_cols,
                     palette=palette,
-                    mapping=mapping_init,
+                    mapping=mapping,
                     encoding=encoding,
                     sheet_name=sheet
                 )
             elif engine == "infer_col_types":
-                inferred_mappings = _create_mapping_dict(
+                inferred_mappings = _infer_mapping(
                     df=df,
-                    mapping=mapping_init,
+                    mapping=mapping,
                 )
                 type_to_ls_cols = convert_type_to_ls_cols(mapping=inferred_mappings)
                 print(f"Inferred Col Types of Sheet {sheet}:\n" + str(type_to_ls_cols) + "\n\n\n")
@@ -379,7 +376,7 @@ def iterate_through_sheets(
                     encoding=encoding
                 )
         elif engine == "infer_col_types":
-            inferred_mappings = _create_mapping_dict(
+            inferred_mappings = _infer_mapping(
                 df=df,
                 mapping=mapping,
             )
@@ -452,7 +449,7 @@ def gen_viz(context_engine: C):
         df_file_name=df_file_name, 
         palette=palette,
         sheet_names=sheet_names
-    )  
+    )
     end = time.time()
     print("\nTime Taken: " + str(end-start))
     return True
