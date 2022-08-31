@@ -301,7 +301,7 @@ def gen_viz_workflow(
 # interate sheets fn
 # ----------------------------------------------------
 def iterate_through_sheets(
-    engine: str,
+    operation: str,
     ext: str,
     df_path_input: str,
     mapping: dict,
@@ -331,7 +331,7 @@ def iterate_through_sheets(
                 encoding=encoding,
                 sheet_name=sheet,
             )
-            if engine == "gen_viz":
+            if operation == "gen_viz":
                 print(f"\nCurrent Sheet: {sheet}")
                 gen_viz_workflow(
                     df=df,
@@ -348,7 +348,7 @@ def iterate_through_sheets(
                     encoding=encoding,
                     sheet_name=sheet
                 )
-            elif engine == "infer_col_types":
+            elif operation == "infer_col_types":
                 inferred_mappings = _infer_mapping(
                     df=df,
                     mapping=mapping,
@@ -360,7 +360,7 @@ def iterate_through_sheets(
             df_path_input=df_path_input,
             encoding=encoding
         )
-        if engine == "gen_viz":
+        if operation == "gen_viz":
             gen_viz_workflow(
                     df=df,
                     df_file_name=df_file_name,
@@ -375,7 +375,7 @@ def iterate_through_sheets(
                     mapping=mapping,
                     encoding=encoding
                 )
-        elif engine == "infer_col_types":
+        elif operation == "infer_col_types":
             inferred_mappings = _infer_mapping(
                 df=df,
                 mapping=mapping,
@@ -401,7 +401,7 @@ def gen_viz(context_engine: C):
         (C) Pass into an iterate_through_sheets fn
     """
     start = time.time()
-    engine = "gen_viz"
+    operation = "gen_viz"
 
     # (A1) Parse Config File
     c = context_engine.k
@@ -434,7 +434,7 @@ def gen_viz(context_engine: C):
 
     # (C)
     iterate_through_sheets(
-        engine=engine,
+        operation=operation,
         ext=ext,
         df_path_input=df_path_input,
         mapping=mapping,
@@ -465,7 +465,7 @@ def infer_col_types(context_engine: C):
     simplefilter(action="ignore")
 
     # (A)
-    engine = "infer_col_types"
+    operation = "infer_col_types"
     encoding = sys.getdefaultencoding()
 
     c = context_engine.k
@@ -475,7 +475,7 @@ def infer_col_types(context_engine: C):
     stripped_df_path_input, ext = os.path.splitext(df_path_input)
     # (B)
     iterate_through_sheets(
-        engine=engine,
+        operation=operation,
         ext=ext,
         df_path_input=df_path_input,
         mapping=mapping,
